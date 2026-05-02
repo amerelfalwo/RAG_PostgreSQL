@@ -1,35 +1,35 @@
-# نظام RAG باستخدام PostgreSQL و GitHub Models
+# RAG System with PostgreSQL and GitHub Models
 
-هذا المشروع يهدف إلى بناء نظام RAG (Retrieval-Augmented Generation) قوي ومبسط.
-الفكرة الأساسية هي استخدام قاعدة بيانات **PostgreSQL** مع إضافة `pgvectorscale` لتخزين النصوص وتحويلها إلى متجهات (Vectors) للبحث عنها بسرعة وكفاءة عالية، بالإضافة إلى الاعتماد على **GitHub Models** لمعالجة الذكاء الاصطناعي.
+This project aims to build a robust and simplified Retrieval-Augmented Generation (RAG) system.
+The core idea is to use **PostgreSQL** with the `pgvectorscale` extension to store text and convert it into vector embeddings for fast and highly efficient similarity search. Furthermore, we leverage **GitHub Models** to handle the AI embedding generation.
 
-## فكرة العمل باختصار:
-- بنأخذ النصوص ونحولها لأرقام (Embeddings) باستخدام `text-embedding-3-small` من خلال **GitHub Models**.
-- بنخزن الأرقام دي في قاعدة بيانات **PostgreSQL**.
-- لما المستخدم يسأل سؤال، بنحول السؤال لنفس الصيغة الرقمية ونبحث عن أقرب النصوص ليه في قاعدة البيانات عشان نجاوب عليه بدقة.
+## How it Works:
+- We process textual data and convert it into numerical representations (Embeddings) using the `text-embedding-3-small` model via **GitHub Models**.
+- These vectors are stored in a **PostgreSQL** database.
+- When a user asks a question, the system converts the question into a vector and performs a similarity search against the database to retrieve the most relevant context and provide an accurate answer.
 
-## المكونات الأساسية:
-1. **GitHub Models**: لتحويل النصوص لـ Embeddings باستخدام الـ GitHub Token بتاعك.
-2. **PostgreSQL**: قاعدة البيانات اللي بنخزن فيها الداتا.
-3. **Pgvectorscale**: إضافة لـ PostgreSQL بتخلي عملية البحث عن النصوص المشابهة سريعة جداً.
-4. **Docker**: لتشغيل بيئة قاعدة البيانات بسهولة وبدون تعقيد.
+## Core Technologies Used:
+1. **GitHub Models**: Used to generate embeddings using the OpenAI API interface, utilizing your personal GitHub Token (PAT).
+2. **PostgreSQL**: The primary relational database used to store our documents and vectors.
+3. **Pgvectorscale**: An advanced extension for PostgreSQL that dramatically speeds up Approximate Nearest Neighbor (ANN) searches and similarity matching.
+4. **Docker**: Used to easily containerize and run the database environment without complex local setup.
 
-## خطوات التشغيل:
-1. انسخ ملف `app/example.env` وسميه `app/.env`.
-2. افتح ملف `app/.env` وحط فيه الـ **GitHub Personal Access Token (PAT)** بتاعك في المتغير `OPENAI_API_KEY`.
-3. شغل قاعدة البيانات باستخدام Docker عن طريق الأمر: 
+## Setup Instructions:
+1. Copy the `app/example.env` file and rename it to `app/.env`.
+2. Open `app/.env` and insert your **GitHub Personal Access Token (PAT)** into the `OPENAI_API_KEY` variable. (The `OPENAI_BASE_URL` is already set to the GitHub Models endpoint).
+3. Start the database environment using Docker:
    ```bash
    docker compose up -d
    ```
-4. نزل مكتبات بايثون المطلوبة:
+4. Install the required Python dependencies:
    ```bash
    pip install -r requirements.txt
    ```
-5. لتجهيز الداتا وإدخالها في قاعدة البيانات، شغل:
+5. To process your data and insert it into the database, run:
    ```bash
    python app/insert_vectors.py
    ```
-6. للبحث وتجربة النظام، استخدم:
+6. To perform a similarity search and test the system, run:
    ```bash
    python app/similarity_search.py
    ```
