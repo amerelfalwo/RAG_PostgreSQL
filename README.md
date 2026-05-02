@@ -1,6 +1,6 @@
 # Building a High-Performance RAG Solution with Pgvectorscale and Python
 
-This tutorial will guide you through setting up and using `pgvectorscale` with Docker and Python, leveraging OpenAI's powerful `text-embedding-3-small` model for embeddings. You'll learn to build a cutting-edge RAG (Retrieval-Augmented Generation) solution, combining advanced retrieval techniques (including hybrid search) with intelligent answer generation based on the retrieved context. Perfect for AI engineers looking to enhance their projects with state-of-the-art vector search and generation capabilities with the power of PostgreSQL.
+This tutorial will guide you through setting up and using `pgvectorscale` with Docker and Python, leveraging GitHub Models for embeddings. You'll learn to build a cutting-edge RAG (Retrieval-Augmented Generation) solution, combining advanced retrieval techniques (including hybrid search) with intelligent answer generation based on the retrieved context. Perfect for AI engineers looking to enhance their projects with state-of-the-art vector search and generation capabilities with the power of PostgreSQL.
 
 ## YouTube Tutorial
 You can watch the full tutorial here on [YouTube](https://youtu.be/hAdEuDBN57g).
@@ -30,14 +30,14 @@ Pgvectorscale Vector builds on top of [pgvector](https://github.com/pgvector/pgv
 
 - Docker
 - Python 3.7+
-- OpenAI API key
+- GitHub Personal Access Token (PAT) with Copilot/Models access
 - PostgreSQL GUI client
 
 ## Steps
 
 1. Set up Docker environment
 2. Connect to the database using a PostgreSQL GUI client (I use TablePlus)
-3. Create a Python script to insert document chunks as vectors using OpenAI embeddings
+3. Create a Python script to insert document chunks as vectors using embeddings via GitHub Models
 4. Create a Python function to perform similarity search
 
 ## Detailed Instructions
@@ -82,16 +82,16 @@ docker compose up -d
 
 ### 3. Create a Python script to insert document chunks as vectors
 
-See `insert_vectors.py` for the implementation. This script uses OpenAI's `text-embedding-3-small` model to generate embeddings.
+See `insert_vectors.py` for the implementation. This script uses the `text-embedding-3-small` model via GitHub Models to generate embeddings.
 
 ### 4. Create a Python function to perform similarity search
 
-See `similarity_search.py` for the implementation. This script also uses OpenAI's `text-embedding-3-small` model for query embedding.
+See `similarity_search.py` for the implementation. This script also uses the `text-embedding-3-small` model via GitHub Models for query embedding.
 
 ## Usage
 
-1. Create a copy of `example.env` and rename it to `.env`
-2. Open `.env` and fill in your OpenAI API key. Leave the database settings as is
+1. Create a copy of `app/example.env` and rename it to `app/.env`
+2. Open `app/.env` and fill in your GitHub PAT as the `OPENAI_API_KEY`. Leave the database settings as is. The `OPENAI_BASE_URL` is configured to `https://models.github.ai/inference`.
 3. Run the Docker container
 4. Install the required Python packages using `pip install -r requirements.txt`
 5. Execute `insert_vectors.py` to populate the database
