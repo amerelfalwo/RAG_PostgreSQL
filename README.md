@@ -1,35 +1,107 @@
-# RAG System with PostgreSQL and GitHub Models
+# E-commerce Customer Support RAG System
 
-This project aims to build a robust and simplified Retrieval-Augmented Generation (RAG) system.
-The core idea is to use **PostgreSQL** with the `pgvectorscale` extension to store text and convert it into vector embeddings for fast and highly efficient similarity search. Furthermore, we leverage **GitHub Models** to handle the AI embedding generation.
+## Overview
 
-## How it Works:
-- We process textual data and convert it into numerical representations (Embeddings) using the `text-embedding-3-small` model via **GitHub Models**.
-- These vectors are stored in a **PostgreSQL** database.
-- When a user asks a question, the system converts the question into a vector and performs a similarity search against the database to retrieve the most relevant context and provide an accurate answer.
+This project is an advanced Retrieval-Augmented Generation (RAG) system designed to automate customer support for e-commerce platforms. The system utilizes a modular architecture to provide accurate, context-aware responses based on a proprietary knowledge base. It features a high-performance Semantic Router for real-time query classification and metadata filtering.
 
-## Core Technologies Used:
-1. **GitHub Models**: Used to generate embeddings using the OpenAI API interface, utilizing your personal GitHub Token (PAT).
-2. **PostgreSQL**: The primary relational database used to store our documents and vectors.
-3. **Pgvectorscale**: An advanced extension for PostgreSQL that dramatically speeds up Approximate Nearest Neighbor (ANN) searches and similarity matching.
-4. **Docker**: Used to easily containerize and run the database environment without complex local setup.
+## Key Features
 
-## Setup Instructions:
-1. Copy the `app/example.env` file and rename it to `app/.env`.
-2. Open `app/.env` and insert your **GitHub Personal Access Token (PAT)** into the `OPENAI_API_KEY` variable. (The `OPENAI_BASE_URL` is already set to the GitHub Models endpoint).
-3. Start the database environment using Docker:
+- **Semantic Routing**: Mathematical intent classification using cosine similarity to route queries to specific categories without additional LLM latency.
+- **Metadata Filtering**: Precision retrieval using PostgreSQL with Timescale Vector to filter results by category (e.g., Shipping, Payments, Returns).
+- **Structured Output**: Strict data validation using the `instructor` library to ensure consistent JSON responses.
+- **Hybrid LLM Support**: Factory pattern implementation to switch between OpenAI and Anthropic models seamlessly.
+- **Asynchronous API**: Built with FastAPI for high-concurrency performance and production-ready deployment.
+
+## Tech Stack
+
+- **Backend**: Python 3.10+, FastAPI.
+- **Database**: PostgreSQL with Timescale Vector extension.
+- **AI Models**: OpenAI (GPT-4o, Text-Embedding-3-Small), Anthropic (Claude 3.5 Sonnet).
+- **Orchestration**: Instructor, Pydantic, NumPy.
+- **Package Management**: `uv` (Astral).
+- **Deployment**: Docker, Hugging Face Spaces.
+
+## Project Structure
+
+```plaintext
+├── app/
+│   ├── api.py              # FastAPI endpoints and middleware configuration
+│   ├── config/
+│   │   └── settings.py     # Environment variables and Pydantic settings
+│   ├── database/
+│   │   └── vector_store.py # Vector operations and semantic routing logic
+│   ├── services/
+│   │   ├── llm_factory.py  # Provider-agnostic LLM integration
+│   │   ├── synthesizer.py  # RAG logic and response generation
+│   │   └── classifier.py   # Intent classification service
+├── Dockerfile              # Containerization for Hugging Face deployment
+├── pyproject.toml          # Project dependencies and metadata
+└── .env                    # Configuration for API keys and database URLs
+```
+
+## Installation and Setup
+
+### Prerequisites
+
+- Python 3.10 or higher.
+- `uv` package manager.
+- PostgreSQL instance with Timescale Vector enabled.
+
+### Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+OPENAI_API_KEY=your_openai_key
+TIMESCALE_SERVICE_URL=postgresql://USER:PASSWORD@HOST.pooler.supabase.com:6543/DB
+```
+
+### Setup Steps
+
+1. Clone the repository.
+2. Install dependencies using `uv`:
    ```bash
-   docker compose up -d
+   uv sync
    ```
-4. Install the required Python dependencies:
+3. Run the development server:
    ```bash
-   pip install -r requirements.txt
+   uv run uvicorn app.api:app --reload
    ```
-5. To process your data and insert it into the database, run:
-   ```bash
-   python app/insert_vectors.py
-   ```
-6. To perform a similarity search and test the system, run:
-   ```bash
-   python app/similarity_search.py
-   ```
+
+## API Reference
+
+### Chat Endpoint
+
+- **URL**: `/api/chat`
+- **Method**: `POST`
+- **Payload**:
+  ```json
+  {
+    "question": "What are your international shipping rates?",
+    "provider": "openai",
+    "filters": { "category": "Shipping" }
+  }
+  ```
+- **Response**: Returns a structured JSON containing the `answer`, `thought_process`, `predicted_category`, and a boolean `enough_context` flag.
+
+## Deployment on Hugging Face Spaces
+
+This project is optimized for deployment as a Docker Space on Hugging Face.
+
+### Deployment Steps
+
+1. **Create a New Space**: Choose "Docker" as the Space type.
+2. **Configure Secrets**: In the Space settings, add the following variables as **Secrets**:
+   - `OPENAI_API_KEY`
+   - `TIMESCALE_SERVICE_URL`
+3. **Push to Hub**: Push your code to the Hugging Face Space repository.
+4. **Platform Requirements**:
+   - The `Dockerfile` uses port `7860` as required by Hugging Face.
+   - It runs under a non-root user (UID 1000) for security.
+   - It uses `uv` for extremely fast build times.
+
+```bash
+# Example of building locally to test
+docker build -t rag-api .
+docker run -p 7860:7860 --env-file .env rag-api
+```

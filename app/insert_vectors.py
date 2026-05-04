@@ -1,45 +1,47 @@
 import os
+import uuid
 from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
-from config.settings import get_settings
+from app.config.settings import get_settings
 
-# Force reload of environment and clear cache in case running interactively
 load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"), override=True)
 get_settings.cache_clear()
 
-from database.vector_store import VectorStore
-from timescale_vector.client import uuid_from_time
+from app.database.vector_store import VectorStore
 
-# Initialize VectorStore
 vec = VectorStore()
 
-# Read the CSV file
-df = pd.read_csv("../data/faq_dataset.csv", sep=";")
-df
+csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "faqs_data.csv")
+df = pd.read_csv(csv_path)
 
-# Prepare data for insertion
-def prepare_record(row):
+texts = df["combined_text"].tolist()
+embeddings = []
 
-    content = f"Question: {row['question']}\nAnswer: {row['answer']}"
-    embedding = vec.get_embedding(content)
-    return pd.Series(
-        {
-            "id": str(uuid_from_time(datetime.now())),
-            "metadata": {
-                "category": row["category"],
-                "created_at": datetime.now().isoformat(),
-            },
-            "contents": content,
-            "embedding": embedding,
-        }
-    )
+batch_size = 50
 
+for i in range(0, len(texts), batch_size):
+    batch = texts[i:i + batch_size]
+    batch_embeddings = vec.openai_client.embeddings.create(
+        input=batch,
+        model=vec.embedding_model
+    ).data
 
-records_df = df.apply(prepare_record, axis=1)
+    embeddings.extend([e.embedding for e in batch_embeddings])
 
-# Create tables and insert data
-vec.create_tables()
-vec.create_index()  # DiskAnnIndex
+records = []
+for i, row in df.iterrows():
+    records.append({
+        "id": str(uuid.uuid4()),
+        "metadata": {
+            "category": row["category"],
+            "created_at": datetime.now().isoformat(),
+        },
+        "contents": row["combined_text"],
+        "embedding": embeddings[i],
+    })
+
+records_df = pd.DataFrame(records)
+
 vec.upsert(records_df)

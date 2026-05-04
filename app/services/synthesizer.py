@@ -1,8 +1,6 @@
-from typing import List
-import pandas as pd
+from typing import Any, Dict, Iterable, List, Tuple
 from pydantic import BaseModel, Field
-from services.llm_factory import LLMFactory
-
+from app.services.llm_factory import LLMFactory
 
 class SynthesizedResponse(BaseModel):
     thought_process: List[str] = Field(
@@ -12,7 +10,6 @@ class SynthesizedResponse(BaseModel):
     enough_context: bool = Field(
         description="Whether the assistant has enough context to answer the question"
     )
-
 
 class Synthesizer:
     SYSTEM_PROMPT = """
@@ -29,53 +26,61 @@ class Synthesizer:
     6. If you cannot answer the question based on the given context, clearly state that.
     7. Maintain a helpful and professional tone appropriate for customer service.
     8. Adhere strictly to company guidelines and policies by using only the provided knowledge base.
-    
-    Review the question from the user:
     """
 
     @staticmethod
-    def generate_response(question: str, context: pd.DataFrame) -> SynthesizedResponse:
+    def generate_response(
+        question: str,
+        context: List[Tuple[Any, ...]],
+        provider: str = "openai",
+    ) -> SynthesizedResponse:
         """Generates a synthesized response based on the question and context.
 
         Args:
             question: The user's question.
             context: The relevant context retrieved from the knowledge base.
+            provider: The LLM provider to use (default: 'openai').
 
         Returns:
             A SynthesizedResponse containing thought process and answer.
         """
-        context_str = Synthesizer.dataframe_to_json(
-            context, columns_to_keep=["content", "category"]
-        )
+        context_str = Synthesizer.build_context_text(context)
 
         messages = [
             {"role": "system", "content": Synthesizer.SYSTEM_PROMPT},
-            {"role": "user", "content": f"# User question:\n{question}"},
             {
-                "role": "assistant",
-                "content": f"# Retrieved information:\n{context_str}",
+                "role": "user", 
+                "content": f"# Retrieved information (Context):\n{context_str}\n\n# User question:\n{question}"
             },
         ]
 
-        llm = LLMFactory("openai")
+        llm = LLMFactory(provider)
         return llm.create_completion(
             response_model=SynthesizedResponse,
             messages=messages,
         )
 
     @staticmethod
-    def dataframe_to_json(
-        context: pd.DataFrame,
-        columns_to_keep: List[str],
+    def build_context_text(
+        context: Iterable[Tuple[Any, ...]],
     ) -> str:
         """
-        Convert the context DataFrame to a JSON string.
+        Convert vecs search results (list of tuples) into a readable context string.
 
-        Args:
-            context (pd.DataFrame): The context DataFrame.
-            columns_to_keep (List[str]): The columns to include in the output.
-
-        Returns:
-            str: A JSON string representation of the selected columns.
+        Each tuple is expected to be (id, distance, metadata_dict).
         """
-        return context[columns_to_keep].to_json(orient="records", indent=2)
+        snippets: List[str] = []
+        for record in context:
+            if len(record) < 3 or not isinstance(record[2], dict):
+                continue
+            metadata: Dict[str, Any] = record[2]
+            text = metadata.get("contents") or metadata.get("text") or ""
+            if not text:
+                continue
+            category = metadata.get("category")
+            if category:
+                snippets.append(f"- {text}\n  category: {category}")
+            else:
+                snippets.append(f"- {text}")
+
+        return "\n".join(snippets) if snippets else "(no relevant context found)"

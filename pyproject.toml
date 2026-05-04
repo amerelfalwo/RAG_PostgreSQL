@@ -6,10 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "anthropic>=0.97.0",
+    "fastapi>=0.136.1",
     "instructor>=1.15.1",
+    "ipykernel>=7.2.0",
+    "numpy>=2.4.4",
     "openai>=2.33.0",
     "pandas>=3.0.2",
-    "psycopg>=3.3.4",
+    "psycopg2-binary>=2.9.12",
     "python-dotenv>=1.2.2",
-    "timescale-vector>=0.0.7",
+    "uvicorn>=0.46.0",
+    "vecs>=0.4.5",
 ]
